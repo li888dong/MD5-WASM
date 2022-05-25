@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>WASM Sobel Example</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    html {
+      font-family: sans-serif;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      text-align: center;
+    }
+
+    video {
+      position: absolute;
+      visibility: hidden;
+    }
+
+    body>div {
+      width: 600px;
+      margin: 0 auto;
+    }
+
+    div>div {
+      position: relative;
+    }
+
+    canvas {
+      border: 1px solid black;
+    }
+
+    button {
+      color: #fff;
+      background-color: #6496c8;
+      border: none;
+      border-radius: 5px;
+      display: inline-block;
+      min-width: 50px;
+      width: 120px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+  </style>
+  <script src="./node_modules/crypto-js/crypto-js.js"></script>
+</head>
+
+<body>
+
+  <textarea name="" id="inputText" cols="30" rows="10"></textarea><br>
+  <button id="btn1">wasm编译</button><br><br><br>
+  <button id="btn2">js编译</button><br>
+  <textarea name="" id="outputText" cols="30" rows="10"></textarea><br>
+  <script>
+    var btn1 = document.getElementById('btn1');
+    var btn2 = document.getElementById('btn2');
+    let input = document.getElementById('inputText');
+    let output = document.getElementById('outputText');
+    btn2.addEventListener('click', function () {
+      console.log("输入", input.value);
+      console.time()
+      console.log(CryptoJS.MD5(input.value).toString());
+      console.timeEnd()
+    })
+    var Module = {};
+    fetch('./md5.wasm')
+      .then(response => response.arrayBuffer())
+      .then(buffer => {
+        Module.wasmBinary = buffer;
+        var script = document.createElement('script');
+        script.src = './md5.js';
+        script.onload = function () {
+          console.log('Emscripten boilerplate loaded.');
+          btn1.addEventListener('click', function () {
+            console.log("输入", input.value)
+            console.time()
+            // 申请空间，存放字符串作为输入从参数
+            let char = allocate(intArrayFromString(input.value), ALLOC_NORMAL);
+            // 申请空间
+            let ptr = _malloc(32);
+            let res = UTF8ToString(_md5encode(char, ptr));//返回的是地址0x123456,UTF8ToString函数转成值
+            output.value = res;
+            console.log("输出", output.value)
+            console.timeEnd();
+          })
+        }
+        document.body.appendChild(script);
+      });
+  </script>
+
+</body>
+
+</html>
